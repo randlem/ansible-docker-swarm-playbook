@@ -1,0 +1,7 @@
+[node]
+172.16.2.247 private_ip=172.16.2.247 ansible_ssh_user=mark
+172.16.2.242 private_ip=172.16.2.242 ansible_ssh_user=mark
+172.16.2.243 private_ip=172.16.2.243 ansible_ssh_user=mark
+
+[manager]
+172.16.2.247  private_ip=172.16.2.247 ansible_ssh_user=mark
