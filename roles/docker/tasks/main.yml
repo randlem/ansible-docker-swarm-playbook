@@ -1,28 +1,28 @@
 ---
 - name: Update apt
-  apt: 
+  apt:
     update_cache: yes
   become: yes
-  become_user: root 
+  become_user: root
   become_method: sudo
 
 - name: Install requirements
-  apt: 
+  apt:
     name: "{{item}}"
   with_items:
-    - apt-transport-https 
+    - apt-transport-https
     - ca-certificates
   become: yes
-  become_user: root 
+  become_user: root
   become_method: sudo
 
 - name: Add docker repo key
-  apt_key: 
-    keyserver: "hkp://p80.pool.sks-keyservers.net:80" 
+  apt_key:
+    keyserver: "hkp://p80.pool.sks-keyservers.net:80"
     id: "58118E89F3A912897C070ADBF76221572C52609D"
     state: present
   become: yes
-  become_user: root 
+  become_user: root
   become_method: sudo
 
 - name: Add docker repo
@@ -30,14 +30,14 @@
     repo: 'deb https://apt.dockerproject.org/repo ubuntu-trusty main'
     state: present
   become: yes
-  become_user: root 
+  become_user: root
   become_method: sudo
 
 - name: Update apt again
-  apt: 
+  apt:
     update_cache: yes
   become: yes
-  become_user: root 
+  become_user: root
   become_method: sudo
 
 - name: Get the uname
@@ -46,53 +46,70 @@
 
 - debug: var=uname
 
-- name: install linux image extra
-  apt: 
-    name: "linux-image-extra-{{uname.stdout}}"
-    state: present
-  become: yes
-  become_user: root 
-  become_method: sudo
+#- name: install linux image extra
+#  apt:
+#    name: "linux-image-extra-{{uname.stdout}}"
+#    state: present
+#  become: yes
+#  become_user: root
+#  become_method: sudo
 
-- name: Install apparmor
-  apt: 
-    name: apparmor
-    state: present
-  become: yes
-  become_user: root 
-  become_method: sudo
+#- name: Install apparmor
+#  apt:
+#    name: apparmor
+#    state: present
+#  become: yes
+#  become_user: root
+#  become_method: sudo
 
 - name: "Install docker engine!"
-  apt: 
+  apt:
     name: docker-engine
     state: present
   become: yes
-  become_user: root 
+  become_user: root
   become_method: sudo
 
+- name: Create the systemd drop-in directory
+  file: path=/etc/systemd/system/docker.service.d state=directory
+  become: yes
+  become_user: root
+  become_method: sudo
+
+- name: Add systemd drop-in
+  template:
+    src: docker.conf
+    dest: /etc/systemd/system/docker.service.d/docker.conf
+  become: yes
+  become_user: root
+  become_method: sudo
+  notify:
+    - reload systemd
+    - restart docker
+
 - name: Add docker group
-  group: 
-    name: docker 
+  group:
+    name: docker
     state: present
 
 - name: Add devops to docker group
-  user: 
+  user:
     name: devops
     group: docker
   become: yes
-  become_user: root 
+  become_user: root
   become_method: sudo
 
 - name: Get uname -s
   command: "uname -s"
   register: unames
-  tags: 
+  tags:
     - with_compose
 
 - name: Get uname -m
   command: "uname -m"
   register: unamem
-  tags: 
+  tags:
     - with_compose
 
 - name: install compose
@@ -100,19 +117,19 @@
     url: "https://github.com/docker/compose/releases/download/1.6.0/docker-compose-{{unames.stdout}}-{{unamem.stdout}}"
     dest: "/usr/local/bin/docker-compose"
   become: yes
-  become_user: root 
+  become_user: root
   become_method: sudo
-  tags: 
+  tags:
     - with_compose
 
 - name: Add execution rights to file
-  file: 
+  file:
     path: /usr/local/bin/docker-compose
-    state: file 
+    state: file
     mode: a+x
     group: docker
   become: yes
-  become_user: root 
+  become_user: root
   become_method: sudo
-  tags: 
+  tags:
     - with_compose

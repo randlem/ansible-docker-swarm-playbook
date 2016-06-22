@@ -1,4 +1,4 @@
-- hosts: 
+- hosts:
   - all
   vars:
     - initial_cluster_size: 3
@@ -13,7 +13,7 @@
     - ubuntubase
     - docker
     - name: consul
-      tags: 
+      tags:
         - consul
 
 - hosts:
@@ -24,13 +24,13 @@
     #$ docker run -d -p 4000:4000 swarm manage -H :4000 --replication --advertise 172.30.0.161:4000 consul://172.30.0.161:8500
     - name: Run docker manager
       docker:
-        name: swarm
+        name: swarm-manager
         image: swarm
         command: "manage -H :4000 --replication --advertise {{private_ip}}:4000 consul://{{private_ip}}:8500"
         state: started
         ports:
           - "4000:4000"
-        expose: 
+        expose:
           - 4000
       tags:
         - swarm
@@ -51,18 +51,12 @@
 - hosts:
    - node
   tasks:
-    #$ docker run -d swarm join --advertise=172.30.0.69:2375 consul://172.30.0.161:8500        
+    #$ docker run -d swarm join --advertise=172.30.0.69:2375 consul://172.30.0.161:8500
     - name: Run docker nodes
       docker:
-        name: swarm
+        name: swarm-node
         image: swarm
-        command: "join --advertise {{private_ip}}:4000 consul://{{private_ip}}:8500"
+        command: "join --advertise {{private_ip}}:2375 consul://{{private_ip}}:8500"
         state: started
       tags:
         - swarm
-
-
-
-
-
-

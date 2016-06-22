@@ -1,2 +1,13 @@
 ---
 # handlers file for docker
+- name: reload systemd
+  become: yes
+  become_user: root
+  become_method: sudo
+  command: systemctl daemon-reload
+
+- name: restart docker
+  become: yes
+  become_user: root
+  become_method: sudo
+  service: name=docker state=restarted enabled=yes
