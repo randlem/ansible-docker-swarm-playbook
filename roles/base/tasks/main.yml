@@ -1,0 +1,76 @@
+---
+# tasks file for ubuntubase
+
+- name: update apt cache
+  apt: update_cache=yes cache_valid_time=3600
+  become: yes
+  become_method: sudo
+  become_user: root
+
+#- name: "Add key"
+#  template: src='id_rsa' dest='~/.ssh/id_rsa' mode=400
+#  tags:
+#    - base
+#    - debug
+
+- name: Install the basics
+  apt: pkg={{ item }} state=installed
+  with_items:
+    - 'unattended-upgrades'
+    - 'git'
+    - 'libpq-dev'
+    - 'python-dev'
+    - 'python-setuptools'
+    - 'python-virtualenv'
+    - 'dnsmasq'
+    - 'resolvconf'
+    - 'python-pip'
+    - 'build-essential'
+  become: yes
+  become_method: sudo
+  become_user: root
+
+- name: Install ansible requirements pip
+  pip:
+    name: "docker-py"
+    state: present
+  tags:
+    - swarm
+  become: yes
+  become_method: sudo
+  become_user: root
+
+- name: Configure Dnsmasq
+  copy: content='server=/consul/127.0.0.1#8600' dest=/etc/dnsmasq.d/10-consul
+  notify:
+    - restart dnsmasq
+  become: yes
+  become_user: root
+  become_method: sudo
+
+- name: Start resolvconf
+  service: name=resolvconf state=started enabled=yes
+  become: yes
+  become_user: root
+  become_method: sudo
+
+- name: get the old hostname
+  command: "cat /etc/hostname"
+  register: old_hostname
+
+- name: Set the hostname
+  copy: content={{node_hostname}} dest=/etc/hostname
+  when: node_hostname is defined
+  become: yes
+  become_user: root
+  become_method: sudo
+
+- debug: var=old_hostname
+
+- name: fix the hosts file
+#  command: "sed -i 's/{{old_hostname}}/{{node_hostname}}/g' /etc/hosts"
+  replace: dest=/etc/hosts regexp='(\s+){{ old_hostname.stdout }}(\s+.*)' replace='\1{{ node_hostname }}\2' backup=yes
+  become: yes
+  become_user: root
+  become_method: sudo
+  when: old_hostname.stdout != node_hostname

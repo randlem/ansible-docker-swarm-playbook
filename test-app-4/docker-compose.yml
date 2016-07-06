@@ -1,0 +1,18 @@
+version: '2'
+
+services:
+  hello:
+    image: tutum/hello-world
+  proxy:
+    build: proxy
+    environment: 
+      CONSUL: 192.168.99.104:8500
+      SERVICE: hello-world
+    ports:
+      - "80"
+  busybox:
+    image: busybox
+
+networks:
+  default:
+    driver: overlay

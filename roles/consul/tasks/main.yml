@@ -3,9 +3,7 @@
   apt:
     name: "{{item}}"
   with_items:
-    - dnsmasq
     - unzip
-    - nginx
     - nagios-plugins
   become: yes
   become_user: root
@@ -35,6 +33,12 @@
   become_user: root
   become_method: sudo
 
+- name: make sure consul config directory exists
+  file: path=/etc/consul.d state=directory
+  become: yes
+  become_user: root
+  become_method: sudo
+
 #- name: upload upstart script
 #  template:
 #    src: upstart.conf
@@ -57,14 +61,7 @@
   service:
     name: consul
     state: started
-  become: yes
-  become_user: root
-  become_method: sudo
-
-- name: Configure Dnsmasq
-  copy: content='server=/consul/127.0.0.1#8600' dest=/etc/dnsmasq.d/10-consul
-  notify:
-    - restart dnsmasq
+    enabled: yes
   become: yes
   become_user: root
   become_method: sudo

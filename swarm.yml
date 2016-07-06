@@ -1,52 +1,23 @@
 - hosts:
-  - all
-  vars:
-    - initial_cluster_size: 3
-  pre_tasks:
-    - name: Install ansible requirements
-      pip:
-        name: "docker-py"
-        state: present
-      tags:
-        - swarm
-  roles:
-    - ubuntubase
-    - docker
-    - name: consul
-      tags:
-        - consul
-
-- hosts:
    - manager
    - replica
   tasks:
-
     #$ docker run -d -p 4000:4000 swarm manage -H :4000 --replication --advertise 172.30.0.161:4000 consul://172.30.0.161:8500
     - name: Run docker manager
       docker:
         name: swarm-manager
         image: swarm
         command: "manage -H :4000 --replication --advertise {{private_ip}}:4000 consul://{{private_ip}}:8500"
+        env: 
+          SERVICE_IGNORE: "yes"
         state: started
         ports:
           - "4000:4000"
         expose:
           - 4000
+        restart_policy: on-failure
       tags:
         - swarm
-
-#- hosts:
-#   - replica
-#  tasks:
-    #$ docker run -d swarm manage -H :4000 --replication --advertise <manager1_ip>:4000 consul://172.30.0.161:8500
-#    - name: Run consul replica
-#      docker:
-#        name: swarm
-#        image: swarm
-#        command: "manage -H :4000 --replication --advertise {{private_ip}}:4000 consul://{{private_ip}}:8500"
-#        state: started
-#      tags:
-#        - swarm
 
 - hosts:
    - node
@@ -57,6 +28,37 @@
         name: swarm-node
         image: swarm
         command: "join --advertise {{private_ip}}:2375 consul://{{private_ip}}:8500"
+        env: 
+          SERVICE_IGNORE: "yes"
         state: started
+        restart_policy: on-failure
       tags:
         - swarm
+    - name: run registrator
+      docker:
+        name: registrator
+        image: gliderlabs/registrator:latest
+        state: started
+        restart_policy: on-failure
+        command: "-internal consul://consul.service.consul:8500"
+        volumes:
+          - "/var/run/docker.sock:/tmp/docker.sock"
+        net: host
+      tags:
+        - registrator
+
+# reboot the hosts when required
+#- hosts:
+#    - all
+#  tasks:
+#    - name: restart machine
+#      shell: sleep 2 && shutdown -r now "Ansible updates triggered"
+#      async: 1
+#      poll: 0
+#      become: yes
+#      become_user: root
+#      become_method: sudo
+#      ignore_errors: true
+#
+#    - name: waiting for server to come back
+#      local_action: wait_for host={{ inventory_hostname }} state=started delay=30 timeout=300
