@@ -1,3 +1,5 @@
 .DS_Store
 swarm_cluster
 *.retry
+ca/
+openssl.cnf

@@ -1,0 +1,1 @@
+DOCKER_SECURITY_OPTS="--tlsverify --tlscacert=/etc/docker/certs.d/ca.pem --tlscert=/etc/docker/certs.d/{{node_hostname}}-cert.pem --tlskey=/etc/docker/certs.d/{{node_hostname}}-priv-key.pem"

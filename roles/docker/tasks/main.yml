@@ -68,6 +68,44 @@
   become_user: root
   become_method: sudo
 
+- name: Make sure the docker directory exists
+  file: path=/etc/docker state=directory
+  become: yes
+  become_user: root
+  become_method: sudo
+
+- name: Move the docker config files into place
+  template:
+    src: "{{ item }}"
+    dest: /etc/docker/{{ item }}
+  with_items:
+    - daemon
+    - networking
+    - security
+  become: yes
+  become_user: root
+  become_method: sudo
+
+- name: Make sure cert directory exists
+  file: path=/etc/docker/certs.d state=directory
+  become: yes
+  become_user: root
+  become_method: sudo
+  tags:
+    - certs
+
+- name: Install TLS certs
+  copy: src=ca/{{item}} dest=/etc/docker/certs.d/{{item}}
+  become: yes
+  become_user: root
+  become_method: sudo
+  with_items:
+    - "ca.pem"
+    - "{{ node_hostname }}-cert.pem"
+    - "{{ node_hostname }}-priv-key.pem"
+  tags:
+    - certs
+
 - name: Create the systemd drop-in directory
   file: path=/etc/systemd/system/docker.service.d state=directory
   become: yes

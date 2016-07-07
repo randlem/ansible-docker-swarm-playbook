@@ -2,20 +2,44 @@
    - manager
    - replica
   tasks:
+    - name: Ensure that docker cert directory exists
+      file: path=/etc/docker/certs.d/ state=directory
+      become: yes
+      become_user: root
+      become_method: sudo
+      tags:
+        - swarm
+    - name: Install the swarm certs
+      copy: src=ca/{{item}} dest=/etc/docker/certs.d/{{item}}
+      become: yes
+      become_user: root
+      become_method: sudo
+      with_items:
+        - "ca.pem"
+        - "manager-cert.pem"
+        - "manager-priv-key.pem"
+      tags:
+        - swarm
     #$ docker run -d -p 4000:4000 swarm manage -H :4000 --replication --advertise 172.30.0.161:4000 consul://172.30.0.161:8500
     - name: Run docker manager
       docker:
         name: swarm-manager
         image: swarm
-        command: "manage -H :4000 --replication --advertise {{private_ip}}:4000 consul://{{private_ip}}:8500"
+        command: "manage -H :3376 --replication --tlsverify --tlscacert=/certs/ca.pem --tlscert=/certs/manager-cert.pem --tlskey=/certs/manager-priv-key.pem --advertise {{private_ip}}:4000 consul://{{private_ip}}:8500"
+        volumes:
+          - /etc/docker/certs.d:/certs:ro
         env: 
           SERVICE_IGNORE: "yes"
         state: started
         ports:
-          - "4000:4000"
+          - "3376:3376"
         expose:
-          - 4000
-        restart_policy: on-failure
+          - 3376
+        restart_policy: always
+        extra_hosts:
+          hestia: 192.168.99.104
+          demeter: 192.168.99.105
+          hera: 192.168.99.106
       tags:
         - swarm
 
@@ -27,11 +51,11 @@
       docker:
         name: swarm-node
         image: swarm
-        command: "join --advertise {{private_ip}}:2375 consul://{{private_ip}}:8500"
+        command: "join --advertise {{node_hostname}}:2376 consul://{{private_ip}}:8500"
         env: 
           SERVICE_IGNORE: "yes"
         state: started
-        restart_policy: on-failure
+        restart_policy: always
       tags:
         - swarm
     - name: run registrator
@@ -39,7 +63,7 @@
         name: registrator
         image: gliderlabs/registrator:latest
         state: started
-        restart_policy: on-failure
+        restart_policy: always
         command: "-internal consul://consul.service.consul:8500"
         volumes:
           - "/var/run/docker.sock:/tmp/docker.sock"

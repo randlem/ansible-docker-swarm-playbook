@@ -1,0 +1,2 @@
+ DOCKER_NETWORKING_OPTS="--cluster-advertise {{private_ip}}:2376 --cluster-store consul://{{private_ip}}:8500"
+ 

@@ -4,7 +4,9 @@
     - initial_cluster_size: 3
   roles:
     - base
-    - docker
+    - name: docker
+      tags:
+        - docker
     - name: consul
       tags:
         - consul
