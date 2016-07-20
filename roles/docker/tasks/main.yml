@@ -85,6 +85,8 @@
   become: yes
   become_user: root
   become_method: sudo
+  notify:
+    - restart docker
 
 - name: Make sure cert directory exists
   file: path=/etc/docker/certs.d state=directory
@@ -128,10 +130,13 @@
     name: docker
     state: present
 
-- name: Add mark to docker group
+- name: Add users to docker group
   user:
-    name: mark
-    group: docker
+    name: "{{item}}"
+    groups: docker
+    append: yes
+  with_items:
+    - mark
   become: yes
   become_user: root
   become_method: sudo

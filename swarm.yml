@@ -21,11 +21,11 @@
       tags:
         - swarm
     #$ docker run -d -p 4000:4000 swarm manage -H :4000 --replication --advertise 172.30.0.161:4000 consul://172.30.0.161:8500
-    - name: Run docker manager
+    - name: Run docker swarm manager
       docker:
         name: swarm-manager
         image: swarm
-        command: "manage -H :3376 --replication --tlsverify --tlscacert=/certs/ca.pem --tlscert=/certs/manager-cert.pem --tlskey=/certs/manager-priv-key.pem --advertise {{private_ip}}:4000 consul://{{private_ip}}:8500"
+        command: "manage -H :3376 --replication --tlsverify --tlscacert=/certs/ca.pem --tlscert=/certs/manager-cert.pem --tlskey=/certs/manager-priv-key.pem --advertise {{private_ip}}:3376 consul://{{private_ip}}:8500"
         volumes:
           - /etc/docker/certs.d:/certs:ro
         env: 
@@ -37,9 +37,9 @@
           - 3376
         restart_policy: always
         extra_hosts:
-          hestia: 192.168.99.104
-          demeter: 192.168.99.105
-          hera: 192.168.99.106
+          hestia: 172.16.2.247
+          demeter: 172.16.2.242
+          hera: 172.16.2.243
       tags:
         - swarm
 
@@ -47,7 +47,7 @@
    - node
   tasks:
     #$ docker run -d swarm join --advertise=172.30.0.69:2375 consul://172.30.0.161:8500
-    - name: Run docker nodes
+    - name: Run docker swarm nodes
       docker:
         name: swarm-node
         image: swarm
@@ -70,7 +70,7 @@
         net: host
       tags:
         - registrator
-
+        
 # reboot the hosts when required
 #- hosts:
 #    - all

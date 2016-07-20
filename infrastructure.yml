@@ -2,6 +2,7 @@
     - all
   vars:
     - initial_cluster_size: 3
+    - registry_address: 172.16.2.247
   roles:
     - base
     - name: docker
@@ -10,3 +11,27 @@
     - name: consul
       tags:
         - consul
+- hosts:
+    - registry
+  vars:
+    - registry_dir: /registry
+  tasks:
+    - name: Make sure the registry directory exists
+      file: path={{registry_dir}} state=directory mode=0755
+      become: yes
+      become_user: root
+      become_method: sudo
+      tags:
+        - registry
+    - name: Start the registry on the registry server
+      docker:
+        name: internal-registry
+        image: registry:2
+        volumes:
+          - "{{registry_dir}}:/var/lib/registry"
+        ports:
+          - "5000:5000"
+        state: started
+        restart_policy: always
+      tags:
+        - registry
